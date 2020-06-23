@@ -1,3 +1,6 @@
 /fermi-data
 make4FGLxml.py
 make4FGLxml.pyc
+*.pyc
+.ipynb_checkpoints
+*.par
