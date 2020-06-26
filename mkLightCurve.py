@@ -44,7 +44,7 @@ def generatemodel(name,templateDir): #creates a model of all sources in region o
 
     return;
 
-def select(name,tmid,tmin,tmax,binsz): #gtselect to cut a specific time bin from the data
+def select(name,tmid,tmin,tmax,binsz,chatter): #gtselect to cut a specific time bin from the data
     gt.filter['evclass'] = 128
     gt.filter['evtype'] = 3
     gt.filter['rad'] = 20
@@ -55,19 +55,21 @@ def select(name,tmid,tmin,tmax,binsz): #gtselect to cut a specific time bin from
     gt.filter['emax'] = 500000
     gt.filter['infile'] = '@photons.txt'
     gt.filter['outfile'] = name+'_filtered-'+str(tmid)+'-'+str(binsz)+'.fits'
+    gt.filter['chatter'] = chatter
     gt.filter.run()
     return;
 
-def goodtimeint(name,tmid,binsz): #good time interval cut removes data taken at poor times
+def goodtimeint(name,tmid,binsz,chatter): #good time interval cut removes data taken at poor times
     gt.maketime['scfile'] = 'spacecraft.fits'
     gt.maketime['filter'] = '(DATA_QUAL>0)&&(LAT_CONFIG==1)'
     gt.maketime['roicut'] = 'no'
     gt.maketime['evfile'] = name+'_filtered-'+str(tmid)+'-'+str(binsz)+'.fits'
     gt.maketime['outfile'] = name+'_gti-'+str(tmid)+'-'+str(binsz)+'.fits'
+    gt.maketime['chatter'] = chatter
     gt.maketime.run()
     return;
 
-def countsmap(name,tmid,xcoord,ycoord,binsz): #creates a counts map of the photons from the region of sky
+def countsmap(name,tmid,xcoord,ycoord,binsz,chatter): #creates a counts map of the photons from the region of sky
     gt.evtbin['evfile'] = name+'_gti-'+str(tmid)+'-'+str(binsz)+'.fits'
     gt.evtbin['scfile'] = 'spacecraft.fits'
     gt.evtbin['outfile'] = name+'_cmap-'+str(tmid)+'-'+str(binsz)+'.fits'
@@ -84,10 +86,11 @@ def countsmap(name,tmid,xcoord,ycoord,binsz): #creates a counts map of the photo
     gt.evtbin['proj'] = 'AIT'
     gt.evtbin['rafield'] = 'RA'
     gt.evtbin['decfield'] = 'DEC'
+    gt.evtbin['chatter'] = chatter
     gt.evtbin.run()
     return;
 
-def countscube(name,tmid,xcoord,ycoord,binsz): #creates a 3D counts map
+def countscube(name,tmid,xcoord,ycoord,binsz,chatter): #creates a 3D counts map
     gt.evtbin['evfile'] = name+'_gti-'+str(tmid)+'-'+str(binsz)+'.fits'
     gt.evtbin['scfile'] = 'spacecraft.fits'
     gt.evtbin['outfile'] = name+'_ccube-'+str(tmid)+'-'+str(binsz)+'.fits'
@@ -106,20 +109,22 @@ def countscube(name,tmid,xcoord,ycoord,binsz): #creates a 3D counts map
     gt.evtbin['decfield'] = 'DEC'
     gt.evtbin['ebinalg'] = 'LOG'
     gt.evtbin['enumbins'] = 37
+    gt.evtbin['chatter'] = chatter
     gt.evtbin.run()
     return;
 
-def livetimecube(name,tmid,binsz): #creates a livetime cube
+def livetimecube(name,tmid,binsz,chatter): #creates a livetime cube
     gt.expCube['evfile'] = name+'_gti-'+str(tmid)+'-'+str(binsz)+'.fits'
     gt.expCube['scfile'] = 'spacecraft.fits'
     gt.expCube['outfile'] = name+'_ltcube-'+str(tmid)+'-'+str(binsz)+'.fits'
     gt.expCube['zmax'] = 90
     gt.expCube['dcostheta'] = 0.025
     gt.expCube['binsz'] = 1
+    gt.expCube['chatter'] = chatter
     gt.expCube.run()
     return;
 
-def expmap(name,tmid,binsz): #creates an exposure map
+def expmap(name,tmid,binsz,chatter): #creates an exposure map
     gt.expMap['evfile'] = name+'_gti-'+str(tmid)+'-'+str(binsz)+'.fits'
     gt.expMap['scfile'] = 'spacecraft.fits'
     gt.expMap['expcube'] = name+'_ltcube-'+str(tmid)+'-'+str(binsz)+'.fits'
@@ -129,10 +134,11 @@ def expmap(name,tmid,binsz): #creates an exposure map
     gt.expMap['nlong'] = 120
     gt.expMap['nlat'] = 120
     gt.expMap['nenergies'] = 37
+    gt.expMap['chatter'] = chatter
     gt.expMap.run()
     return;
 
-def expcube(name,tmid,xcoord,ycoord,binsz): #3D exposure map
+def expcube(name,tmid,xcoord,ycoord,binsz,chatter): #3D exposure map
     gt.gtexpcube2['infile'] = name+'_ltcube-'+str(tmid)+'-'+str(binsz)+'.fits'
     gt.gtexpcube2['outfile'] = name+'_expCube-'+str(tmid)+'-'+str(binsz)+'.fits'
     gt.gtexpcube2['cmap'] = 'none'
@@ -148,10 +154,11 @@ def expcube(name,tmid,xcoord,ycoord,binsz): #3D exposure map
     gt.gtexpcube2['emin'] = 100
     gt.gtexpcube2['emax'] = 500000
     gt.gtexpcube2['enumbins'] = 37
+    gt.gtexpcube2['chatter'] = chatter
     gt.gtexpcube2.run()
     return;
 
-def srcmap(name,tmid,binsz): #map of sources in region of sky
+def srcmap(name,tmid,binsz,chatter): #map of sources in region of sky
     gt.srcMaps['expcube'] = name+'_ltcube-'+str(tmid)+'-'+str(binsz)+'.fits'
     gt.srcMaps['scfile'] = 'spacecraft.fits'
     gt.srcMaps['cmap'] = name+'_ccube-'+str(tmid)+'-'+str(binsz)+'.fits'
@@ -160,6 +167,7 @@ def srcmap(name,tmid,binsz): #map of sources in region of sky
     gt.srcMaps['outfile'] = name+'_srcMap-'+str(tmid)+'-'+str(binsz)+'.fits'
     gt.srcMaps['irfs'] = 'CALDB'
     gt.srcMaps['ptsrc'] = 'yes'
+    gt.srcMaps['chatter'] = chatter
     gt.srcMaps.run()
     return;
 
@@ -197,61 +205,128 @@ def calcflux(name,tmid,model_name,binsz): #this function actually does the likel
          print 'Analysis did not converge'
     return;
 
-def applytools(name,model_name,xcoord,ycoord,start,binsz,i,chatter=2):
+def applytools(name,model_name,xcoord,ycoord,start,binsz,i,chatter=0):
 #this function applys all the previous ones in sequence for a complete anaylsis on a source
     tmin = start + (i-1)*binsz
     tmax = start + i*binsz
     tmid = (tmax+tmin)/2
     
+    error = False
+    
     if os.path.exists('Flux'+str(tmid)+'-'+str(binsz)+'.txt'):
-        print 'Bin'+str(tmid)+'has been calculated'
-    else:   
-        if os.path.exists(name+'_filtered-'+str(tmid)+'-'+str(binsz)+'.fits'):
+        print 'Bin '+str(tmid)+' has been calculated'
+    else:
+        try:
+            if os.path.exists(name+'_filtered-'+str(tmid)+'-'+str(binsz)+'.fits'):
+                pass
+            else:
+                select(name,tmid,tmin,tmax,binsz)
+        except: 
+            print 'ERROR '+str(tmid)+' gtselect execution failed, tmin='+str(tmin)+' tmax='+str(tmax)
+            error = True
             pass
-        else:
-            select(name,tmid,tmin,tmax,binsz)
-        
-        if os.path.exists(name+'_gti-'+str(tmid)+'-'+str(binsz)+'.fits'):
-            pass
-        else:
-            goodtimeint(name,tmid,binsz)
-        
-        if os.path.exists(name+'_cmap-'+str(tmid)+'-'+str(binsz)+'.fits'):
-            pass
-        else:
-            countsmap(name,tmid,xcoord,ycoord,binsz)
-        
-        if os.path.exists(name+'_ccube-'+str(tmid)+'-'+str(binsz)+'.fits'):
-            pass
-        else:
-            countscube(name,tmid,xcoord,ycoord,binsz)
-        
-        if os.path.exists(name+'_ltcube-'+str(tmid)+'-'+str(binsz)+'.fits'):
-            pass
-        else:
-            livetimecube(name,tmid,binsz)
-        
-        if os.path.exists(name+'_expMap-'+str(tmid)+'-'+str(binsz)+'.fits'):
-            pass
-        else:
-            expmap(name,tmid,binsz)
-        
-        if os.path.exists(name+'_expCube-'+str(tmid)+'-'+str(binsz)+'.fits'):
-            pass
-        else:
-            expcube(name,tmid,xcoord,ycoord,binsz)
-        
-        if os.path.exists(name+'_srcMap-'+str(tmid)+'-'+str(binsz)+'.fits'):
-            pass
-        else:
-            srcmap(name,tmid,binsz)
-        
-        calcflux(name,tmid,model_name,binsz)
-        
+        try: 
+            if os.path.exists(name+'_gti-'+str(tmid)+'-'+str(binsz)+'.fits'):
+                pass
+            else:
+                goodtimeint(name,tmid,binsz)
+        except:
+            if error==False:    
+                print 'ERROR '+str(tmid)+' gtmktime execution failed'
+                error = True
+                pass
+            else: 
+                pass
+        try:
+            if os.path.exists(name+'_cmap-'+str(tmid)+'-'+str(binsz)+'.fits'):
+                pass
+            else:
+                countsmap(name,tmid,xcoord,ycoord,binsz)
+        except:
+            if error==False:
+                print 'ERROR '+str(tmid)+' Counts Map execution failed'
+                error = True
+                pass
+            else:
+                pass
+        try:
+            if os.path.exists(name+'_ccube-'+str(tmid)+'-'+str(binsz)+'.fits'):
+                pass
+            else:
+                countscube(name,tmid,xcoord,ycoord,binsz)
+        except:
+            if error==False:
+                print 'ERROR '+str(tmid)+' Counts cube execution failed'
+                error = True
+                pass
+            else:
+                pass
+        try:    
+            if os.path.exists(name+'_ltcube-'+str(tmid)+'-'+str(binsz)+'.fits'):
+                pass
+            else:
+                livetimecube(name,tmid,binsz)
+        except:
+            if error==False:    
+                print 'ERROR '+str(tmid)+' gtltcube execution failed'
+                error = True
+                pass
+            else: 
+                pass
+        try:
+            if os.path.exists(name+'_expMap-'+str(tmid)+'-'+str(binsz)+'.fits'):
+                pass
+            else:
+                expmap(name,tmid,binsz)
+        except: 
+            if error==False:
+                print 'ERROR '+str(tmid)+' Exposure map execution failed'
+                error = True
+                pass
+            else:
+                pass
+        try:
+            if os.path.exists(name+'_expCube-'+str(tmid)+'-'+str(binsz)+'.fits'):
+                pass
+            else:
+                expcube(name,tmid,xcoord,ycoord,binsz)
+        except:
+            if error==False:
+                print 'ERROR '+str(tmid)+' Exposure cube execution failed'
+                error = True
+                pass
+            else:
+                pass
+        try:
+            if os.path.exists(name+'_srcMap-'+str(tmid)+'-'+str(binsz)+'.fits'):
+                pass
+            else:
+                srcmap(name,tmid,binsz)
+        except:
+            if error==False:
+                print 'ERROR '+str(tmid)+' gtsrcmap execution failed'
+                error = True
+                pass
+            else:
+                pass
+        try:
+            calcflux(name,tmid,model_name,binsz)
+        except:
+            if error==False:
+                print 'ERROR '+str(tmid)+' likelihood analysis failed'
+                error = True
+                pass
+            else:
+                pass        
     return;
 
 #wrapper function to allow applytools to be passed to multi processing with different bins
-def generateflux(poolsize,name,model_name,xcoord,ycoord,start,binsz,i):
+def generateflux(poolsize,name,model_name,xcoord,ycoord,start,end,binsz):
+    
+    diff = end - start #time of fermi mission
+    numbins = diff/binsz #number of bins
+    i = list(range(1,numbins+1))
+    
     global ft
     def ft(i):
         return applytools(name,model_name,xcoord,ycoord,start,binsz,i,chatter=0)
