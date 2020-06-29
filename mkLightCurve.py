@@ -220,7 +220,7 @@ def applytools(name,model_name,xcoord,ycoord,start,binsz,i,chatter=0):
             if os.path.exists(name+'_filtered-'+str(tmid)+'-'+str(binsz)+'.fits'):
                 pass
             else:
-                select(name,tmid,tmin,tmax,binsz)
+                select(name,tmid,tmin,tmax,binsz,chatter)
         except: 
             print 'ERROR '+str(tmid)+' gtselect execution failed, tmin='+str(tmin)+' tmax='+str(tmax)
             error = True
@@ -229,7 +229,7 @@ def applytools(name,model_name,xcoord,ycoord,start,binsz,i,chatter=0):
             if os.path.exists(name+'_gti-'+str(tmid)+'-'+str(binsz)+'.fits'):
                 pass
             else:
-                goodtimeint(name,tmid,binsz)
+                goodtimeint(name,tmid,binsz,chatter)
         except:
             if error==False:    
                 print 'ERROR '+str(tmid)+' gtmktime execution failed'
@@ -241,7 +241,7 @@ def applytools(name,model_name,xcoord,ycoord,start,binsz,i,chatter=0):
             if os.path.exists(name+'_cmap-'+str(tmid)+'-'+str(binsz)+'.fits'):
                 pass
             else:
-                countsmap(name,tmid,xcoord,ycoord,binsz)
+                countsmap(name,tmid,xcoord,ycoord,binsz,chatter)
         except:
             if error==False:
                 print 'ERROR '+str(tmid)+' Counts Map execution failed'
@@ -253,7 +253,7 @@ def applytools(name,model_name,xcoord,ycoord,start,binsz,i,chatter=0):
             if os.path.exists(name+'_ccube-'+str(tmid)+'-'+str(binsz)+'.fits'):
                 pass
             else:
-                countscube(name,tmid,xcoord,ycoord,binsz)
+                countscube(name,tmid,xcoord,ycoord,binsz,chatter)
         except:
             if error==False:
                 print 'ERROR '+str(tmid)+' Counts cube execution failed'
@@ -265,7 +265,7 @@ def applytools(name,model_name,xcoord,ycoord,start,binsz,i,chatter=0):
             if os.path.exists(name+'_ltcube-'+str(tmid)+'-'+str(binsz)+'.fits'):
                 pass
             else:
-                livetimecube(name,tmid,binsz)
+                livetimecube(name,tmid,binsz.chatter)
         except:
             if error==False:    
                 print 'ERROR '+str(tmid)+' gtltcube execution failed'
@@ -277,7 +277,7 @@ def applytools(name,model_name,xcoord,ycoord,start,binsz,i,chatter=0):
             if os.path.exists(name+'_expMap-'+str(tmid)+'-'+str(binsz)+'.fits'):
                 pass
             else:
-                expmap(name,tmid,binsz)
+                expmap(name,tmid,binsz,chatter)
         except: 
             if error==False:
                 print 'ERROR '+str(tmid)+' Exposure map execution failed'
@@ -289,7 +289,7 @@ def applytools(name,model_name,xcoord,ycoord,start,binsz,i,chatter=0):
             if os.path.exists(name+'_expCube-'+str(tmid)+'-'+str(binsz)+'.fits'):
                 pass
             else:
-                expcube(name,tmid,xcoord,ycoord,binsz)
+                expcube(name,tmid,xcoord,ycoord,binsz,chatter)
         except:
             if error==False:
                 print 'ERROR '+str(tmid)+' Exposure cube execution failed'
@@ -301,7 +301,7 @@ def applytools(name,model_name,xcoord,ycoord,start,binsz,i,chatter=0):
             if os.path.exists(name+'_srcMap-'+str(tmid)+'-'+str(binsz)+'.fits'):
                 pass
             else:
-                srcmap(name,tmid,binsz)
+                srcmap(name,tmid,binsz,chatter)
         except:
             if error==False:
                 print 'ERROR '+str(tmid)+' gtsrcmap execution failed'
