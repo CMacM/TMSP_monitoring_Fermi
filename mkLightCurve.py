@@ -228,10 +228,12 @@ def calcflux(name,tmid,model_name,binsz,chatter):
             
     return;
 
-def applytools(name,model_name,xcoord,ycoord,start,binsz,i,chatter=0):
+def alltools(name,model_name,xcoord,ycoord,start,binsz,i,chatter=0):
     '''Runs all the fermi tools in sequence to generate the necessary files
     and then runs the likelihood analysis. By default, output is minimal
     '''
+    
+    global tmid
     tmin = start + (i-1)*binsz
     tmax = start + i*binsz
     tmid = (tmax+tmin)/2
@@ -239,58 +241,59 @@ def applytools(name,model_name,xcoord,ycoord,start,binsz,i,chatter=0):
     if os.path.exists('Flux'+str(tmid)+'-'+str(binsz)+'.txt'):
         print 'Bin '+str(tmid)+' has been calculated'
         return
-    
-    try:
         
-        if os.path.exists(name+'_filtered-'+str(tmid)+'-'+str(binsz)+'.fits'):
-            pass
-        else:
-            select(name,tmid,tmin,tmax,binsz,chatter)
-
-        if os.path.exists(name+'_gti-'+str(tmid)+'-'+str(binsz)+'.fits'):
-            pass
-        else:
-            goodtimeint(name,tmid,binsz,chatter)
-
-        if os.path.exists(name+'_cmap-'+str(tmid)+'-'+str(binsz)+'.fits'):
-            pass
-        else:
-            countsmap(name,tmid,xcoord,ycoord,binsz,chatter)
-
-        if os.path.exists(name+'_ccube-'+str(tmid)+'-'+str(binsz)+'.fits'):
-            pass
-        else:
-            countscube(name,tmid,xcoord,ycoord,binsz,chatter)
-
-        if os.path.exists(name+'_ltcube-'+str(tmid)+'-'+str(binsz)+'.fits'):
-            pass
-        else:
-            livetimecube(name,tmid,binsz,chatter)
-
-        if os.path.exists(name+'_expMap-'+str(tmid)+'-'+str(binsz)+'.fits'):
-            pass
-        else:
-            expmap(name,tmid,binsz,chatter)
-
-        if os.path.exists(name+'_expCube-'+str(tmid)+'-'+str(binsz)+'.fits'):
-            pass
-        else:
-            expcube(name,tmid,xcoord,ycoord,binsz,chatter)
-
-        if os.path.exists(name+'_srcMap-'+str(tmid)+'-'+str(binsz)+'.fits'):
-            pass
-        else:
-            srcmap(name,tmid,binsz,chatter)
-
-        calcflux(name,tmid,model_name,binsz,chatter)
-        
-    except RuntimeError as error:
-        
-        print error
+    if os.path.exists(name+'_filtered-'+str(tmid)+'-'+str(binsz)+'.fits'):
         pass
+    else:
+        select(name,tmid,tmin,tmax,binsz,chatter)
+
+    if os.path.exists(name+'_gti-'+str(tmid)+'-'+str(binsz)+'.fits'):
+        pass
+    else:
+        goodtimeint(name,tmid,binsz,chatter)
+
+    if os.path.exists(name+'_cmap-'+str(tmid)+'-'+str(binsz)+'.fits'):     
+        pass
+    else:
+        countsmap(name,tmid,xcoord,ycoord,binsz,chatter)
+
+    if os.path.exists(name+'_ccube-'+str(tmid)+'-'+str(binsz)+'.fits'):
+        pass
+    else:
+        countscube(name,tmid,xcoord,ycoord,binsz,chatter)
+
+    if os.path.exists(name+'_ltcube-'+str(tmid)+'-'+str(binsz)+'.fits'):
+        pass
+    else:
+        livetimecube(name,tmid,binsz,chatter)
+
+    if os.path.exists(name+'_expMap-'+str(tmid)+'-'+str(binsz)+'.fits'):   
+        pass
+    else:
+        expmap(name,tmid,binsz,chatter)
+
+    if os.path.exists(name+'_expCube-'+str(tmid)+'-'+str(binsz)+'.fits'):
+        pass
+    else:
+        expcube(name,tmid,xcoord,ycoord,binsz,chatter)
+
+    if os.path.exists(name+'_srcMap-'+str(tmid)+'-'+str(binsz)+'.fits'):
+        pass
+    else:
+        srcmap(name,tmid,binsz,chatter)
+
+    calcflux(name,tmid,model_name,binsz,chatter)
         
     return;
 
+def applytools(name,model_name,xcoord,ycoord,start,binsz,i,chatter=0):
+    '''Wrapper for fermi tools function to implement error handling'''
+    try:
+        alltools(name,model_name,xcoord,ycoord,start,binsz,i,chatter=0)
+    except RuntimeError as e:
+        print(e.message)
+        print 'Bin = '+str(tmid)
+        pass
 
 def generateflux(poolsize,name,model_name,xcoord,ycoord,start,end,binsz):
     '''Function exists as a wrapper for applytools, allowing it to be easily
