@@ -10,7 +10,22 @@ import glob
 import re
 from make4FGLxml import *
 
-def generatemodel(name,templateDir):
+def WeeklyDownload(cmd, cwd=None, env=None):
+    '''When provided with the correct wget arguement, this function 
+    can be used to download the entire LAT library in weekly snapshots 
+    and retrive any newly released data'''
+    P = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+stderr=subprocess.STDOUT)
+    l = True
+    while l:
+        l = P.stdout.read(1)
+        sys.stdout.write(l)
+    P.wait()
+    if P.returncode:
+        raise subprocess.CalledProcessError(returncode=P.returncode,
+cmd=cmd)
+
+def generatemodel(name,xcoord,ycoord,templateDir):
     '''Creates a model of all sources in region of sky to be fit, necessary for source map
     creation and likelihood analysis
     '''
@@ -20,6 +35,8 @@ def generatemodel(name,templateDir):
         gt.filter['evclass'] = 128
         gt.filter['evtype'] = 3
         gt.filter['rad'] = 20
+        gt.filter['ra'] = xcoord
+        gt.filter['dec'] = ycoord
         gt.filter['zmax'] = 90
         gt.filter['emin'] = 100
         gt.filter['emax'] = 500000
@@ -27,7 +44,7 @@ def generatemodel(name,templateDir):
         gt.filter['outfile'] = name+'_allphotons_filtered.fits'
         gt.filter.run()
     
-        gt.maketime['scfile'] = 'spacecraft.fits'
+        gt.maketime['scfile'] = '@spacecraft.txt'
         gt.maketime['filter'] = '(DATA_QUAL>0)&&(LAT_CONFIG==1)'
         gt.maketime['roicut'] = 'no'
         gt.maketime['evfile'] = name+'_allphotons_filtered.fits'
@@ -46,13 +63,15 @@ def generatemodel(name,templateDir):
 
     return;
 
-def select(name,tmid,tmin,tmax,binsz,chatter):
-    '''Cuts a time bin from the complete data set and filters it on energy 
+def select(name,xcoord,ycoord,tmid,tmin,tmax,binsz,chatter):
+    '''Cuts a radius and time bin from the complete data set and filters it on energy 
     and radius
     '''
     gt.filter['evclass'] = 128
     gt.filter['evtype'] = 3
     gt.filter['rad'] = 20
+    gt.filter['ra'] = xcoord
+    gt.filter['dec'] = ycoord
     gt.filter['zmax'] = 90
     gt.filter['tmin'] = tmin
     gt.filter['tmax'] = tmax
@@ -68,7 +87,7 @@ def goodtimeint(name,tmid,binsz,chatter):
     '''Performs a good time interval cut to remove data taken at 
     poor times - requires filtered data
     '''
-    gt.maketime['scfile'] = 'spacecraft.fits'
+    gt.maketime['scfile'] = '@spacecraft.txt'
     gt.maketime['filter'] = '(DATA_QUAL>0)&&(LAT_CONFIG==1)'
     gt.maketime['roicut'] = 'no'
     gt.maketime['evfile'] = name+'_filtered-'+str(tmid)+'-'+str(binsz)+'.fits'
@@ -81,7 +100,7 @@ def countsmap(name,tmid,xcoord,ycoord,binsz,chatter):
     '''Generates counts map - requires gti file
     '''
     gt.evtbin['evfile'] = name+'_gti-'+str(tmid)+'-'+str(binsz)+'.fits'
-    gt.evtbin['scfile'] = 'spacecraft.fits'
+    gt.evtbin['scfile'] = '@spacecraft.txt'
     gt.evtbin['outfile'] = name+'_cmap-'+str(tmid)+'-'+str(binsz)+'.fits'
     gt.evtbin['algorithm'] = 'CMAP'
     gt.evtbin['emin'] = 100
@@ -104,7 +123,7 @@ def countscube(name,tmid,xcoord,ycoord,binsz,chatter):
     '''Generates counts cube - requires gti file
     '''
     gt.evtbin['evfile'] = name+'_gti-'+str(tmid)+'-'+str(binsz)+'.fits'
-    gt.evtbin['scfile'] = 'spacecraft.fits'
+    gt.evtbin['scfile'] = '@spacecraft.txt'
     gt.evtbin['outfile'] = name+'_ccube-'+str(tmid)+'-'+str(binsz)+'.fits'
     gt.evtbin['algorithm'] = 'CCUBE'
     gt.evtbin['emin'] = 100
@@ -129,7 +148,7 @@ def livetimecube(name,tmid,binsz,chatter):
     '''Generates livetime cube - requires gti file
     '''
     gt.expCube['evfile'] = name+'_gti-'+str(tmid)+'-'+str(binsz)+'.fits'
-    gt.expCube['scfile'] = 'spacecraft.fits'
+    gt.expCube['scfile'] = '@spacecraft.txt'
     gt.expCube['outfile'] = name+'_ltcube-'+str(tmid)+'-'+str(binsz)+'.fits'
     gt.expCube['zmax'] = 90
     gt.expCube['dcostheta'] = 0.025
@@ -142,7 +161,7 @@ def expmap(name,tmid,binsz,chatter):
     '''Generates exposure map - requires gti file and livetime cube
     '''
     gt.expMap['evfile'] = name+'_gti-'+str(tmid)+'-'+str(binsz)+'.fits'
-    gt.expMap['scfile'] = 'spacecraft.fits'
+    gt.expMap['scfile'] = '@spacecraft.txt'
     gt.expMap['expcube'] = name+'_ltcube-'+str(tmid)+'-'+str(binsz)+'.fits'
     gt.expMap['outfile'] = name+'_expMap-'+str(tmid)+'-'+str(binsz)+'.fits'
     gt.expMap['irfs'] = 'CALDB'
@@ -181,7 +200,7 @@ def srcmap(name,tmid,binsz,chatter): #map of sources in region of sky
     and livetime cube
     '''
     gt.srcMaps['expcube'] = name+'_ltcube-'+str(tmid)+'-'+str(binsz)+'.fits'
-    gt.srcMaps['scfile'] = 'spacecraft.fits'
+    gt.srcMaps['scfile'] = '@spacecraft.txt'
     gt.srcMaps['cmap'] = name+'_ccube-'+str(tmid)+'-'+str(binsz)+'.fits'
     gt.srcMaps['srcmdl'] = name+'_model_clean.xml'
     gt.srcMaps['bexpmap'] = name+'_expCube-'+str(tmid)+'-'+str(binsz)+'.fits'
@@ -228,23 +247,19 @@ def calcflux(name,tmid,model_name,binsz,chatter):
             
     return;
 
-def alltools(name,model_name,xcoord,ycoord,start,binsz,i,chatter=0):
+def alltools(name,model_name,xcoord,ycoord,tmid,binsz,chatter=0):
     '''Runs all the fermi tools in sequence to generate the necessary files
     and then runs the likelihood analysis. By default, output is minimal
     '''
     
-    global tmid
-    tmin = start + (i-1)*binsz
-    tmax = start + i*binsz
-    tmid = (tmax+tmin)/2
+    tmin = tmid - binsz/2
+    tmax = tmid + binsz/2
     
     if os.path.exists('Flux'+str(tmid)+'-'+str(binsz)+'.txt'):
         print 'Bin '+str(tmid)+' has been calculated'
         return
         
-    if os.path.exists(name+'_filtered-'+str(tmid)+'-'+str(binsz)+'.fits'):
-        pass
-    else:
+    if not os.path.exists(name+'_filtered-'+str(tmid)+'-'+str(binsz)+'.fits'):
         select(name,tmid,tmin,tmax,binsz,chatter)
 
     if os.path.exists(name+'_gti-'+str(tmid)+'-'+str(binsz)+'.fits'):
@@ -286,13 +301,12 @@ def alltools(name,model_name,xcoord,ycoord,start,binsz,i,chatter=0):
         
     return;
 
-def applytools(name,model_name,xcoord,ycoord,start,binsz,i,chatter=0):
+def applytools(name,model_name,xcoord,ycoord,tmid,binsz,chatter=0):
     '''Wrapper for fermi tools function to implement error handling'''
     try:
         alltools(name,model_name,xcoord,ycoord,start,binsz,i,chatter=0)
     except RuntimeError as e:
-        print(e.message)
-        print 'Bin = '+str(tmid)
+        print e.message+'\nBin = '+str(tmid)
         pass
 
 def generateflux(poolsize,name,model_name,xcoord,ycoord,start,end,binsz):
@@ -306,7 +320,12 @@ def generateflux(poolsize,name,model_name,xcoord,ycoord,start,end,binsz):
     
     global ft
     def ft(i):
-        return applytools(name,model_name,xcoord,ycoord,start,binsz,i,chatter=0)
+        
+        tmin = start + (i-1)*binsz
+        tmax = start + i*binsz
+        tmid = (tmax+tmin)/2
+    
+        return applytools(name,model_name,xcoord,ycoord,tmid,binsz,chatter=0)
 
     pool = mp.Pool(poolsize)
     pool.map(ft, i) #runs the function in parallel on multiple cpus
