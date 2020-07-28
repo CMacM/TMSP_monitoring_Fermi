@@ -14,9 +14,7 @@ from make4FGLxml import *
 import astropy.io.fits
 
 J1023 = {'name' : 'J1023', 'model_name' : '4FGL J1023.7+0038', 'xcoord' : 155.946, 'ycoord' : 0.645, 'rec_binsz' : 2000000}
-
 J12270 = {'name' : 'J12270', 'model_name' : '4FGL J1228.0-4853', 'xcoord' : 186.995, 'ycoord' : -48.8952, 'rec_binsz' : 4000000}
-
 J18245 = {'name' : 'J18245', 'model_name' : '4FGL J1824.6-2452', 'xcoord' : 276.135, 'ycoord' : -24.8688, 'rec_binsz' : 12000000}
 
 def RunSubprocess(cmd, cwd=None, env=None):
@@ -56,7 +54,7 @@ def GenFileList():
         for i in range(0,len(spacecraftlist)):
             F = astropy.io.fits.open(spacecraftlist[i])
             data = F[1].data
-            if not data['DATA_QUAL'].sum() != 0:
+            if not data['DATA_QUAL'].sum() == 0:
                 f.write(str(spacecraftlist[i]))
                 f.write('\n')
 
@@ -198,7 +196,7 @@ def LiveTimeCube(name,tmid,binsz,chatter):
     '''Generates livetime cube - requires gti file
     '''
     gt.expCube['evfile'] = name+'_gti-'+str(tmid)+'-'+str(binsz)+'.fits'
-    gt.expCube['scfile'] = '@spacecraft.txt'
+    gt.expCube['scfile'] = 'spacecraft.txt'
     gt.expCube['outfile'] = name+'_ltcube-'+str(tmid)+'-'+str(binsz)+'.fits'
     gt.expCube['zmax'] = 90
     gt.expCube['dcostheta'] = 0.025
@@ -215,7 +213,7 @@ def ExpMap(name,tmid,binsz,chatter):
     gt.expMap['expcube'] = name+'_ltcube-'+str(tmid)+'-'+str(binsz)+'.fits'
     gt.expMap['outfile'] = name+'_expMap-'+str(tmid)+'-'+str(binsz)+'.fits'
     gt.expMap['irfs'] = 'CALDB'
-    gt.expMap['srcrad'] = 20
+    gt.expMap['srcrad'] = 30
     gt.expMap['nlong'] = 120
     gt.expMap['nlat'] = 120
     gt.expMap['nenergies'] = 37
@@ -311,7 +309,7 @@ def CalcSingleBin(source,tmid,binsz,chatter=0):
     
     if os.path.exists('Flux'+str(tmid)+'-'+str(binsz)+'.txt'):
         print 'Bin '+str(tmid)+' has been calculated'
-        return
+        return;
         
     if not os.path.exists(name+'_filtered-'+str(tmid)+'-'+str(binsz)+'.fits'):
         Select(name,xcoord,ycoord,tmid,tmin,tmax,binsz,chatter)
@@ -354,6 +352,13 @@ def CalcAllBins(poolsize,source,binsz=None):
     parallelized. For single core computing this function is not necessary and
     applytools should be used instead
     '''
+    
+    name = source['name']
+    model_name = source['model_name']
+    xcoord = source['xcoord']
+    ycoord = source['ycoord']
+    binsz = source['rec_binsz']
+    
     photonlist = sorted(glob.glob('/home/b7009348/projects/fermi-data/Weekly_Photons/weekly/photon/*.fits'))
     
     Fstart = astropy.io.fits.open(photonlist[0])        
@@ -362,31 +367,22 @@ def CalcAllBins(poolsize,source,binsz=None):
     start = Fstart[0].header['TSTART']
     end = Fend[0].header['TSTOP']
     
-    with open('StopTime.txt','w') as f:
-        f.write(str(end))
-        
-    name = source['name']
-    model_name = source['model_name']
-    xcoord = source['xcoord']
-    ycoord = source['ycoord']
-    binsz = source['rec_binsz']
-    
     diff = end - start #time of fermi mission
-    numbins = diff/binsz #number of bins
-    i = list(range(1,int(numbins+1)))
+    numbins = np.ceil(diff/binsz) #number of bins
+    i_array = np.arange(numbins)
+    tmid = start + (i_array+0.5)*binsz
     
+    with open('StopTime.txt', 'w') as f:
+        f.write(str(end))
+            
     global ft
-    def ft(i):
+    def ft(tmid):
         
-        tmin = start + (i-1)*binsz
-        tmax = start + i*binsz
-        tmid = (tmax+tmin)/2
-    
         return ErrorPass(source,tmid,binsz,chatter=0)
 
     pool = mp.Pool(poolsize)
-    pool.map(ft, i) #runs the function in parallel on multiple cpus
-    pool.close()
+    pool.map(ft, tmid) #runs the function in parallel on multiple cpus
+    pool.close()              
     return;
 
 def PlotCurve(source):
@@ -398,7 +394,7 @@ def PlotCurve(source):
     spy = 31536000
     start_dec_yrs = 2008.0 + 8.0/12.0 + 4.0/365.0
 
-    files = sorted(glob.glob('Flux*'+str(binsz)+'.txt'))
+    files = sorted(glob.glob('Flux*.txt'))
     data = np.zeros((len(files),3))
 
     for i in range(0,len(files)):
@@ -414,5 +410,25 @@ def PlotCurve(source):
     plt.ylabel('Flux ($10^{-8}cm^{-2}s^{-1}$)')
     plt.gcf().set_size_inches(8,6)
     plt.savefig(name+'LightCurve-'+str(binsz)+'.pdf')
+    
+    return;
+
+def UpdateCurves(poolsize, source, binsz=None):
+    
+    fluxes = sorted(glob.glob('Flux*.txt'))
+    photonlist = sorted(glob.glob('/home/b7009348/projects/fermi-data/Weekly_Photons/weekly/photon/*.fits'))
+       
+    Fend = astropy.io.fits.open(photonlist[-1])
+    end = Fend[0].header['TSTOP']
+    
+    with open('StopTime.txt','r') as f:
+        old_end = float(f.readline())
+
+    if old_end != end:
+        print 'New data found, recomputing final bins'
+        os.remove(fluxes[-1])
+        CalcAllBins(poolsize,source,binsz=None)
+    else:
+        print 'No new data present'
     
     return;
