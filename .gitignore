@@ -4,4 +4,8 @@ make4FGLxml.pyc
 *.pyc
 .ipynb_checkpoints
 *.par
-dhbrhvbj
+*.txt
+*.reg
+*.fits
+*.xml
+light-curves/
